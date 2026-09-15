@@ -41,7 +41,7 @@ public class SecurityConfig {
             .cors(x -> x.configurationSource(source))
             .sessionManagement(x -> x.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(x -> {
-                if (environment.matchesProfiles("dev")) x
+                if (environment.getProperty("springdoc.api-docs.enabled", Boolean.class, false)) x
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                     .permitAll();
                 x.requestMatchers("/actuator/health").permitAll();

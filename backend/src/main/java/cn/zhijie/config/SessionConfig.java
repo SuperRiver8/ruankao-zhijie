@@ -29,9 +29,6 @@ public class SessionConfig {
         boolean redis =
             mode == SessionProperties.Store.REDIS ||
             (mode == SessionProperties.Store.AUTO && configured);
-        if (environment.matchesProfiles("prod") && !redis) throw new IllegalStateException(
-            "生产环境必须使用 Redis 会话存储"
-        );
         if (redis && !configured) throw new IllegalStateException(
             "Redis 模式必须配置 REDIS_HOST 或 spring.data.redis.host"
         );

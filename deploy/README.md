@@ -1,101 +1,138 @@
-# 部署说明
+# 独立部署说明
 
-后台与用户账户已分离：`admin_user` 保存后台账号，`app_user` 保存用户端会员。默认管理员由 `sql/001_init.sql` 插入，账号 `admin`、密码 `admin123`，只保存 BCrypt 摘要。Java 启动不再创建账号。
+本地编译，服务器运行。上传完整 `deploy` 后无需上传源码，服务器只需 Docker Engine 和 Compose 插件，并能拉取 PostgreSQL、Redis、Java、Nginx 基础镜像。
 
-**新版 001 仅适用于空数据库初始化，不能在已有数据库上直接重复执行。** 本次不提供旧数据迁移，不自动删除数据库或执行 SQL；已有数据请先备份并自行准备空数据库。
+## 1. 本地打包
 
-后台 ADMIN 可在“后台账号”中新建、编辑、禁用后台账号并分配 ADMIN、EDITOR、REVIEWER 角色。“会员身份”仅管理用户端会员，不能授予后台权限。用户端注册账号不能登录后台。
+本地安装 Java 21、Maven 3.9、Node.js 22 或更高版本。在项目根目录运行：
 
-“账户设置”需验证当前密码，修改账号或密码后旧会话失效。首次登录后请修改默认密码。本次身份隔离升级使旧令牌失效，两个前端都需要重新登录。
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/package.ps1
+```
 
-前端已拆为 `frontend/customer` 和 `frontend/admin` 两个独立项目。各自执行 `npm ci`、`npm run dev`；端口仍为 5173、5174。Docker 分别安装依赖，构建 `customer/dist` 和 `admin/dist`，Nginx 的访问端口保持不变。
-
-部署配置统一放在与 `backend` 同级的 `deploy` 目录：
+脚本安装前端依赖、检查类型、构建两端并打包后端，跳过后端测试。失败立即停止，所有编译成功后才更新 `frontend` 和 `app.jar`，不修改 `.env`。
 
 ```text
 deploy/
-├── .env.example                         # 环境变量示例
-├── compose.yml                          # 服务编排
-├── backend.Dockerfile                   # 后端镜像
-├── backend.Dockerfile.dockerignore      # 后端构建上下文过滤
-├── frontend.Dockerfile                  # 前端镜像
-├── frontend.Dockerfile.dockerignore     # 前端构建上下文过滤
-├── nginx.conf                           # 双前端与 API 代理
-└── sql/                                 # 手动执行的 SQL
-    ├── 000_create_database.sql          # 创建 ruankao_zhijie 数据库
+├── docker compose.yml
+├── Dockerfile
+├── Dockerfile.dockerignore
+├── nginx/
+│   └── nginx.cnf             # 挂载到 Nginx 容器的站点配置
+├── package.ps1
+├── .env.example
+├── .env                     # 自行配置，不提交 Git
+├── app.jar                  # 后端可执行 JAR，不提交 Git
+├── postgres-data/           # 服务器 PostgreSQL 数据，不提交 Git
+├── attachments/             # 服务器附件数据，不提交 Git
+├── frontend/                # 脚本生成，不提交 Git
+│   ├── customer/
+│   └── admin/
+└── sql/
+    ├── 000_create_database.sql
     └── 001_init.sql
 ```
 
-## 启动
+## 2. 配置环境
 
-以下命令使用 PowerShell，从项目根目录开始：
+后端仅保留 `application.yml`，不再使用 dev/prod profile，无需设置 `SPRING_PROFILES_ACTIVE`。Compose 通过环境变量选择 Redis 会话存储，`JOBS_ENABLED` 默认开启导入任务，`API_DOCS_ENABLED` 默认关闭接口文档，可在 `.env` 中修改。数据库、Redis、JWT、AES 和附件路径继续通过环境变量传入。
+
+首次执行，已有 `.env` 时跳过复制：
 
 ```powershell
-cd deploy
-Copy-Item .env.example .env
+Copy-Item deploy/.env.example deploy/.env
 ```
 
-编辑 `deploy/.env`，设置数据库密码、Redis 密码、至少 32 字节的 JWT 密钥，以及 Base64 编码的 32 字节 AES 密钥。AES 密钥可用以下命令生成：
+编辑 `.env`：`SERVER_HOST` 填服务器 IP，不含协议和端口；默认用户端 `5173`、后台 `5174`。数据库密码、Redis 密码、JWT 密钥和 AES 密钥分别生成，填写到对应变量。以下命令每运行一次生成一个随机值，运行四次：
 
 ```powershell
-[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+$rng.Dispose()
 ```
 
-实际 `.env` 已被 Git 忽略，不要提交密钥。以下命令均在 `deploy` 目录执行：
+保留生成的密钥。AES 密钥丢失或更换会导致已有认证材料无法解密。`.env.dev` 是历史本地配置，不参与部署，不应作为服务器 `.env` 使用。
 
-```powershell
-docker compose up -d postgres redis
-# 首次启动先等待数据库就绪。
+## 3. 上传并启动
+
+上传整个 `deploy`，包含隐藏的 `.env` 和完整 `frontend` 和 `app.jar`。不要上传本地调试用 `.env.dev`。例如放到服务器 `/opt/ruankao/deploy`。
+
+以下均为服务器 Linux Shell 命令：
+
+```sh
+cd /opt/ruankao/deploy
+chmod 600 .env
+docker compose config --quiet
+docker compose up -d --build
 docker compose ps
-Get-Content -Raw -Encoding utf8 sql/000_create_database.sql | docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U zhijie -d postgres
-Get-Content -Raw -Encoding utf8 sql/001_init.sql | docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U zhijie -d ruankao_zhijie
-docker compose up -d --build api web
+docker compose logs --tail=100 api
 ```
 
-业务数据库名统一为 `ruankao_zhijie`，连接用户名仍为 `zhijie`。先连接 `postgres` 维护库执行 `000_create_database.sql`，再连接 `ruankao_zhijie` 执行 `001_init.sql`。创建数据库需要 CREATEDB 权限，且不能在事务中执行；数据库已存在时跳过创建脚本，建表脚本仅对空数据库执行一次。
+Compose 自动读取目录中的 `docker compose.yml` 和 `.env`。放行安全组和防火墙 TCP 5173、5174（修改端口后放行对应端口）。
 
-Compose 不自动创建业务数据库，也不配置 Flyway、自动迁移或容器自动建表。以后结构变更的 SQL 也放在 `sql/`，人工评审后执行。若此前已经使用 `zhijie` 数据库存有业务数据，本次配置修改不会迁移或删除旧数据；应先另行完成数据迁移，再启动使用新库名的 API。
+- 用户端：`http://服务器IP:5173`，自行注册。
+- 管理后台：`http://服务器IP:5174`，首次使用 `admin / admin123`，登录后进入“账户设置”修改密码。
+- API 由两端 Nginx 的 `/api/` 同源代理，不开放宿主机 8080。
+- PostgreSQL、Redis 仅容器网络可访问。
 
-打开 [管理后台](http://localhost:5174)，使用 `admin / admin123` 登录并修改密码。用户端在 [customer](http://localhost:5173) 独立注册。后台导入 `templates/example.json` 后审核发布，再使用用户端学习及考试。
+空 PostgreSQL 数据卷首次启动创建 `ruankao_zhijie`，自动执行 `001_init.sql`。不挂载 `000_create_database.sql`，它仅供本地手动建库。已有卷不会重新执行初始化，后续升级 SQL 需评审后手动执行。初始化失败时先查看 `docker compose logs postgres`，排查后处理空库，不要在已有业务库重复执行初始化脚本。
 
-如需从项目根目录运行 Compose，请显式指定配置和环境文件：
+所有容器默认使用北京时间（`Asia/Shanghai`，UTC+8）；Java 默认时区、PostgreSQL 会话及日志时区也显式设为北京时间。
 
-```powershell
-docker compose --env-file deploy/.env -f deploy/compose.yml up -d
+## 4. 更新与维护
+
+前端直接使用 `nginx:alpine` 镜像，通过只读挂载加载 `frontend/customer`、`frontend/admin` 和 `nginx/nginx.cnf`，无需前端 Dockerfile；后端继续使用 `Dockerfile` 构建镜像。
+
+本地重新运行打包脚本，将新的产物、后端 Dockerfile 和配置覆盖到服务器。保留服务器 `.env`，不要用示例或本地新密钥覆盖，然后执行：
+
+```sh
+docker compose up -d --build
+docker compose ps
+docker compose logs --tail=100 api web
 ```
 
-## 不安装 Redis 的本地调试
+仅修改 `nginx/nginx.cnf` 后运行 `docker compose exec web nginx -t`，通过后执行 `docker compose exec web nginx -s reload`。若上传工具替换了文件或整个产物目录，执行 `docker compose up -d --force-recreate web`，使容器重新挂载最新文件。
 
-开发环境默认关闭导入任务，不会每 3 秒查询 `import_batch`。需要处理后台上传的 JSON／ZIP 内容包时，在后端运行环境设置 `JOBS_ENABLED=true` 并重启。关闭时导入提交接口会明确提示未启用，不会创建一直排队的任务；生产环境默认启用。
-
-若日志出现“对表 import_batch 权限不够”，说明数据库连接账号没有该表的访问权限。关闭任务只能停止轮询，不能修复数据库权限。请核对 `DATABASE_USER` 与建表账号；其他业务表也可能存在同样的问题。
-
-后端默认使用 `dev` 配置。未配置非空 `REDIS_HOST` 或 `spring.data.redis.host` 时，会话和登录限流使用服务器内存，不创建 Redis 连接，也不检查 Redis 健康状态。前端继续使用 Bearer JWT，无需修改。重启后重新登录即可；内存模式仅适用于单实例开发调试。
-
-在 IDEA 的运行配置中设置数据库连接和密钥，例如：
-
-```text
-SPRING_PROFILES_ACTIVE=dev
-SESSION_STORE=auto
-DATABASE_URL=jdbc:postgresql://localhost:5432/ruankao_zhijie
-DATABASE_USER=zhijie
-DATABASE_PASSWORD=你的数据库密码
-JWT_SECRET=至少32字节的随机密钥
-ENCRYPTION_KEY=Base64编码的32字节密钥
+```sh
+# 停止服务，保留数据
+docker compose down
+# 启动已有镜像
+docker compose up -d
 ```
 
-不要设置 `REDIS_HOST`；如果系统已有 Redis 地址环境变量，可显式设置 `SESSION_STORE=memory`。IDEA 不会自动加载 `deploy/.env`。PostgreSQL 和手动初始化的数据库仍然必需，JWT/AES 密钥也必须配置；该模式仅移除 Redis 运行依赖。
+PostgreSQL 挂载当前部署目录的 `./postgres-data` 到 `/var/lib/postgresql/data`，附件挂载 `./attachments` 到 `/data/attachments`。上传更新时保留这两个服务器目录。路径相对于 Compose 文件所在目录。
 
-`SESSION_STORE` 可选 `auto`、`memory`、`redis`。`auto` 遇到显式 Redis 地址就使用 Redis；Redis 已配置但不可用时返回服务不可用，不降级、不绕过鉴权。Redis 模式需要配置主机、端口及对应密码，健康检查包含 Redis。
+首次部署时 Docker 自动创建挂载目录，Dockerfile 中的目录授权会保证附件目录可写。
 
-`prod` 默认 `redis`，缺少地址或选择内存模式都会启动失败。Compose 已固定 `SPRING_PROFILES_ACTIVE=prod` 和 `SESSION_STORE=redis`。保留原有 Redis 会话键格式，本次不需要修改数据库。
+不要在需要保留 Redis 数据时执行 `docker compose down -v`。项目名保持 `ruankao-zhijie`，Redis 继续使用原命名卷。历史使用自定义项目名的部署，所有命令继续加 `-p 原项目名`。原 PostgreSQL 和附件命名卷不会自动迁移到当前目录；已有部署应先停服备份，将原数据库恢复到新目录对应的数据库，并迁入附件后再恢复访问。
 
-## 路径与备份
+### 旧附件迁移
 
-Docker 构建上下文为项目根目录，Dockerfile 的 COPY 路径已相应调整。Compose 项目名固定为 `ruankao-zhijie`，附件仍保存在项目根目录的 `data/attachments`，避免移动配置后切换到另一份数据目录。此前使用自定义 Compose 项目名的部署，继续用 `-p 原项目名` 指定。
+升级旧部署时先停止旧 API，备份数据库和原项目的 `data/attachments`，保留原 AES 密钥。新 API 首次启动前执行（替换实际绝对路径）：
 
-默认仅监听本机端口。对外部署时配置 HTTPS 反向代理与实际 CORS 域名。不能将附件目录映射为静态目录；容器用户需有附件数据目录读写权限。
+```sh
+docker compose build api
+docker compose run --rm --no-deps --user root --entrypoint sh \
+  -v /原项目绝对路径/data/attachments:/old-attachments:ro api \
+  -c 'cp -a /old-attachments/. /data/attachments/ && chown -R zhijie:zhijie /data/attachments'
+docker compose up -d --build
+```
 
-备份应在暂停写入时同时保存 PostgreSQL（`pg_dump`）、项目根目录 `data/attachments` 及妥善保管的 AES 密钥。密钥丢失无法解密认证材料，不能随意更换。Redis 会话可撤销重建。生产环境应另外配置备份保留策略、监控、附件扫描与依法确定的敏感材料保留期限。
+目标 `deploy/attachments` 目录应为空，核对迁移结果后再恢复访问。已有 PostgreSQL 数据目录缺少业务数据库或表时不会自动补建，应按现有数据库状态准备迁移 SQL。
 
-本地 Java 进程不会自动读取 `deploy/.env`，请在终端或 IDE 中注入其中的环境变量。
+### 备份
+
+以下命令在暂停业务写入期间同时备份数据库和附件；另行妥善保存 `.env`：
+
+```sh
+mkdir -p backups
+docker compose stop web api
+docker compose exec -T postgres pg_dump -U zhijie -d ruankao_zhijie -Fc > backups/database.dump
+docker compose run --rm --no-deps --user root --entrypoint tar api \
+  -C /data/attachments -czf - . > backups/attachments.tar.gz
+docker compose start api web
+```
+
+每次备份使用单独目录或转存文件，避免覆盖历史备份。恢复时先停止业务，在空目标库用 `pg_restore` 恢复数据库，将附件归档解压至 `deploy/attachments` 并恢复容器中 `zhijie` 用户对应的所有权，同时使用原 `.env` 密钥。

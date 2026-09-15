@@ -1,10 +1,9 @@
 server:
+  shutdown: graceful
   port: 8080
   error:
     include-message: never
 spring:
-  profiles:
-    default: dev
   jackson:
     serialization:
       write-dates-as-timestamps: false
@@ -32,7 +31,7 @@ mybatis:
 app:
   session:
     store: ${SESSION_STORE:auto}
-  jobs-enabled: ${JOBS_ENABLED:true}
+  jobs-enabled: ${JOBS_ENABLED:false}
   jwt-secret: ${JWT_SECRET}
   encryption-key: ${ENCRYPTION_KEY}
   attachment-dir: ${ATTACHMENT_DIR:./data/attachments}
@@ -40,9 +39,9 @@ app:
   official-domains: ${OFFICIAL_DOMAINS:ruankao.org.cn,cpta.com.cn}
 springdoc:
   api-docs:
-    enabled: false
+    enabled: ${API_DOCS_ENABLED:false}
   swagger-ui:
-    enabled: false
+    enabled: ${API_DOCS_ENABLED:false}
 management:
   endpoints:
     web:

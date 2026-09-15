@@ -206,7 +206,7 @@ class SessionStoreTest {
     }
 
     @Test
-    void redisSelectionAndProductionGuards() {
+    void redisSelectionAndConfigurationGuards() {
         context()
             .withPropertyValues("spring.data.redis.host=localhost")
             .run(ctx -> {
@@ -218,8 +218,11 @@ class SessionStoreTest {
             .withPropertyValues("app.session.store=redis")
             .run(ctx -> assertNotNull(ctx.getStartupFailure()));
         context()
-            .withPropertyValues("spring.profiles.active=prod", "app.session.store=memory")
-            .run(ctx -> assertNotNull(ctx.getStartupFailure()));
+            .withPropertyValues("app.session.store=memory", "spring.data.redis.host=localhost")
+            .run(ctx -> {
+                assertNull(ctx.getStartupFailure());
+                assertInstanceOf(MemorySessionStore.class, ctx.getBean(SessionStore.class));
+            });
     }
 
     @Test

@@ -6,3 +6,9 @@ data/
 *.log
 .idea/
 .cache/
+
+deploy/frontend/
+deploy/app.jar
+deploy/.package-*/
+deploy/postgres-data/
+deploy/attachments/
