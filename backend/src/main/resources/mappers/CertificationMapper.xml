@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.CertificationMapper">
+<resultMap id="ApplicationProjectionMap" type="cn.zhijie.pojo.entity.ApplicationProjection">
+<result column="id" property="id" />
+<result column="user_id" property="userId" />
+<result column="certificate_id" property="certificateId" />
+<result column="holder_name_encrypted" property="holderNameEncrypted" />
+<result column="number_type" property="numberType" />
+<result column="number_encrypted" property="numberEncrypted" />
+<result column="number_hash" property="numberHash" />
+<result column="obtained_on" property="obtainedOn" />
+<result column="attachment_id" property="attachmentId" />
+<result column="auxiliary_id" property="auxiliaryId" />
+<result column="note" property="note" />
+<result column="revision" property="revision" />
+<result column="auto_result" property="autoResult" />
+<result
+      column="auto_details"
+      property="autoDetails"
+      typeHandler="cn.zhijie.config.JsonNodeTypeHandler"
+    />
+<result column="official_result" property="officialResult" />
+<result column="status" property="status" />
+<result column="created_at" property="createdAt" />
+<result column="updated_at" property="updatedAt" />
+<result column="certificate_name" property="certificateName" />
+<result column="username" property="username" />
+</resultMap>
+<resultMap id="VerificationEntityMap" type="cn.zhijie.pojo.entity.VerificationEntity">
+<result column="id" property="id" />
+<result column="application_id" property="applicationId" />
+<result column="reviewer_id" property="reviewerId" />
+<result column="result" property="result" />
+<result column="official_source" property="officialSource" />
+<result column="evidence" property="evidence" />
+<result column="ownership_evidence" property="ownershipEvidence" />
+<result column="created_at" property="createdAt" />
+</resultMap>
+<resultMap id="ReviewEntityMap" type="cn.zhijie.pojo.entity.ReviewEntity">
+<result column="id" property="id" />
+<result column="application_id" property="applicationId" />
+<result column="reviewer_id" property="reviewerId" />
+<result column="action" property="action" />
+<result column="reason" property="reason" />
+<result column="created_at" property="createdAt" />
+</resultMap>
+  <insert id="insertApplication">
+    INSERT INTO
+    certificate_application(id,user_id,certificate_id,holder_name_encrypted,number_type,number_encrypted,number_hash,obtained_on,attachment_id,auxiliary_id,note,auto_result,auto_details) VALUES(#{id},#{userId},#{certificateId},#{holder},#{numberType},#{number},#{hash},#{obtainedOn},#{attachmentId},#{auxiliaryId},#{note},#{autoResult},CAST(#{autoDetails,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS
+    jsonb))
+  </insert>
+  <select id="application" resultMap="ApplicationProjectionMap">
+    SELECT a.id,a.user_id,a.certificate_id,a.holder_name_encrypted,a.number_type,a.number_encrypted,a.number_hash,a.obtained_on,a.attachment_id,a.auxiliary_id,a.note,a.revision,a.auto_result,a.auto_details,a.official_result,a.status,a.created_at,a.updated_at,c.name certificate_name FROM certificate_application a JOIN certificate c ON
+    c.id=a.certificate_id WHERE a.id=#{id}
+  </select>
+  <select id="lockApplication" resultMap="ApplicationProjectionMap">
+    SELECT id,user_id,certificate_id,holder_name_encrypted,number_type,number_encrypted,number_hash,obtained_on,attachment_id,auxiliary_id,note,revision,auto_result,auto_details,official_result,status,created_at,updated_at FROM certificate_application WHERE id=#{id} FOR UPDATE
+  </select>
+  <select id="applications" resultMap="ApplicationProjectionMap">
+    SELECT a.id,a.user_id,a.certificate_id,a.holder_name_encrypted,a.number_type,a.number_encrypted,a.number_hash,a.obtained_on,a.attachment_id,a.auxiliary_id,a.note,a.revision,a.auto_result,a.auto_details,a.official_result,a.status,a.created_at,a.updated_at,c.name certificate_name,u.username FROM certificate_application a JOIN certificate c
+    ON c.id=a.certificate_id JOIN app_user u ON u.id=a.user_id
+    <where>
+      <if test="userId != null">a.user_id=#{userId}</if>
+    </where>
+    ORDER BY a.created_at DESC
+  </select>
+  <select id="duplicateCount" resultType="int">
+    SELECT count(*) FROM certificate_application WHERE number_hash=#{hash} AND id!=#{id} AND status
+    NOT IN ('REJECTED','REVOKED')
+  </select>
+  <insert id="snapshotApplication">
+    INSERT INTO application_revision SELECT id,revision,to_jsonb(a),now() FROM
+    certificate_application a WHERE id=#{id}
+  </insert>
+  <update id="resubmitApplication">
+    UPDATE certificate_application SET
+    certificate_id=#{certificateId},holder_name_encrypted=#{holder},number_type=#{numberType},number_encrypted=#{number},number_hash=#{hash},obtained_on=#{obtainedOn},attachment_id=#{attachmentId},auxiliary_id=#{auxiliaryId},note=#{note},auto_result=#{autoResult},auto_details=CAST(#{autoDetails,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS
+    jsonb),revision=revision+1,status='PENDING',official_result='UNVERIFIED',updated_at=now() WHERE
+    id=#{id}
+  </update>
+  <update id="setApplicationState">
+    UPDATE certificate_application SET
+    status=#{status},official_result=#{official},updated_at=now() WHERE id=#{id}
+  </update>
+  <insert id="insertVerification">
+    INSERT INTO verification_record
+    VALUES(#{id},#{applicationId},#{reviewer},#{result},#{source},#{evidence},#{ownership},now())
+  </insert>
+  <select id="verifications" resultMap="VerificationEntityMap">
+    SELECT id,application_id,reviewer_id,result,official_source,evidence,ownership_evidence,created_at FROM verification_record WHERE application_id=#{id} ORDER BY created_at DESC
+  </select>
+  <insert id="insertReview">
+    INSERT INTO review_record VALUES(#{id},#{applicationId},#{reviewer},#{action},#{reason},now())
+  </insert>
+  <select id="reviews" resultMap="ReviewEntityMap">
+    SELECT id,application_id,reviewer_id,action,reason,created_at FROM review_record WHERE application_id=#{id} ORDER BY created_at DESC
+  </select>
+<select id="applicationsPage" resultMap="ApplicationProjectionMap">SELECT a.id,a.user_id,a.certificate_id,a.holder_name_encrypted,a.number_type,a.number_encrypted,a.number_hash,a.obtained_on,a.attachment_id,a.auxiliary_id,a.note,a.revision,a.auto_result,a.auto_details,a.official_result,a.status,a.created_at,a.updated_at,c.name certificate_name,u.username FROM certificate_application a JOIN certificate c
+    ON c.id=a.certificate_id JOIN app_user u ON u.id=a.user_id
+    <where>
+      <if test="userId != null">a.user_id=#{userId}</if>
+    </where>
+ORDER BY <choose><when test="query.sort == 'id'">a.id</when><otherwise>a.created_at</otherwise></choose> <choose><when test="query.direction == 'asc'">ASC</when><otherwise>DESC</otherwise></choose>, a.id ASC LIMIT #{query.size} OFFSET #{query.offset}</select>
+<select id="applicationsCount" resultType="long">SELECT count(*) FROM (SELECT a.id,a.user_id,a.certificate_id,a.holder_name_encrypted,a.number_type,a.number_encrypted,a.number_hash,a.obtained_on,a.attachment_id,a.auxiliary_id,a.note,a.revision,a.auto_result,a.auto_details,a.official_result,a.status,a.created_at,a.updated_at,c.name certificate_name,u.username FROM certificate_application a JOIN certificate c
+    ON c.id=a.certificate_id JOIN app_user u ON u.id=a.user_id
+    <where>
+      <if test="userId != null">a.user_id=#{userId}</if>
+    </where>) page_count</select>
+</mapper>

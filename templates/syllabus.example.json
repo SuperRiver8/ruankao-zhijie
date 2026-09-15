@@ -1,0 +1,27 @@
+{
+  "templateVersion": "1.0",
+  "namespace": "ruankao-demo",
+  "entries": [
+    {
+      "kind": "SYLLABUS",
+      "externalId": "SD.DEMO",
+      "payload": {
+        "title": "软件设计师示例大纲（仅演示，非官方大纲）",
+        "version": "demo-1",
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "subjects": [
+          {
+            "code": "BASIC",
+            "name": "基础知识",
+            "chapters": [
+              {
+                "code": "OS",
+                "name": "操作系统"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

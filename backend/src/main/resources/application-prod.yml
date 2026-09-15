@@ -1,0 +1,10 @@
+server:
+  shutdown: graceful
+app:
+  session:
+    store: ${SESSION_STORE:redis}
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

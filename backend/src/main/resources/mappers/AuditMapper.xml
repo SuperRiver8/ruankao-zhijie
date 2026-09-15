@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.AuditMapper">
+<resultMap id="AuditEntityMap" type="cn.zhijie.pojo.entity.AuditEntity">
+<result column="id" property="id" />
+<result column="actor_id" property="actorId" /><result
+      column="admin_actor_id"
+      property="adminActorId"
+    />
+<result column="action" property="action" />
+<result column="target_id" property="targetId" />
+<result column="detail" property="detail" />
+<result column="created_at" property="createdAt" />
+</resultMap>
+  <insert id="audit">
+    INSERT INTO audit_log(id,actor_id,admin_actor_id,action,target_id,detail,created_at) VALUES(#{id},#{actor},#{adminActor},#{action},#{target},#{detail},now())
+  </insert>
+  <select id="audits" resultMap="AuditEntityMap">
+    SELECT id,actor_id,admin_actor_id,action,target_id,detail,created_at FROM audit_log ORDER BY created_at DESC
+  </select>
+<select
+    id="auditsPage"
+    resultMap="AuditEntityMap"
+  >SELECT id,actor_id,admin_actor_id,action,target_id,detail,created_at FROM audit_log
+ORDER BY <choose><when test="query.sort == 'id'">id</when><otherwise
+      >created_at</otherwise></choose> <choose><when
+        test="query.direction == 'asc'"
+      >ASC</when><otherwise
+      >DESC</otherwise></choose>, id ASC LIMIT #{query.size} OFFSET #{query.offset}</select>
+<select
+    id="auditsCount"
+    resultType="long"
+  >SELECT count(*) FROM (SELECT id,actor_id,admin_actor_id,action,target_id,detail,created_at FROM audit_log) page_count</select>
+</mapper>

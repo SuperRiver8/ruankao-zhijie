@@ -1,0 +1,19 @@
+{
+  "templateVersion": "1.0",
+  "namespace": "ruankao-demo",
+  "entries": [
+    {
+      "kind": "PAPER",
+      "externalId": "P.001",
+      "payload": {
+        "title": "软件设计师演示卷",
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "count": 2,
+        "durationMinutes": 30,
+        "points": 5,
+        "shuffleQuestions": true,
+        "shuffleOptions": true
+      }
+    }
+  ]
+}

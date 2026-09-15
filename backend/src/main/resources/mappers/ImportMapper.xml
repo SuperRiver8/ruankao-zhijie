@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.ImportMapper">
+<resultMap id="ImportBatchEntityMap" type="cn.zhijie.pojo.entity.ImportBatchEntity">
+<result column="id" property="id" />
+<result column="owner_id" property="ownerId" />
+<result column="idempotency_key" property="idempotencyKey" />
+<result column="checksum" property="checksum" />
+<result column="status" property="status" />
+<result column="payload" property="payload" typeHandler="cn.zhijie.config.JsonNodeTypeHandler" />
+<result column="report" property="report" typeHandler="cn.zhijie.config.JsonNodeTypeHandler" />
+<result column="created_at" property="createdAt" />
+<result column="allow_updates" property="allowUpdates" />
+</resultMap>
+  <insert id="insertBatch">
+    INSERT INTO
+    import_batch(id,owner_id,idempotency_key,checksum,status,payload,report) VALUES(#{id},#{ownerId},#{key},#{checksum},'PREVIEW',CAST(#{payload,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS
+    jsonb),CAST(#{report,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS jsonb))
+  </insert>
+  <select id="batchByKey" resultMap="ImportBatchEntityMap">
+    SELECT id,owner_id,idempotency_key,checksum,status,payload,report,created_at,allow_updates FROM import_batch WHERE owner_id=#{ownerId} AND
+    idempotency_key=#{key}
+  </select>
+  <select id="batch" resultMap="ImportBatchEntityMap">
+    SELECT id,owner_id,idempotency_key,checksum,status,payload,report,created_at,allow_updates FROM import_batch WHERE id=#{id}
+  </select>
+  <select id="lockBatch" resultMap="ImportBatchEntityMap">
+    SELECT id,owner_id,idempotency_key,checksum,status,payload,report,created_at,allow_updates FROM import_batch WHERE id=#{id} FOR UPDATE
+  </select>
+  <select id="batches" resultMap="ImportBatchEntityMap">
+    SELECT id,status,report,created_at FROM import_batch WHERE owner_id=#{id} ORDER BY
+    created_at DESC
+  </select>
+  <update id="finishBatch">
+    UPDATE import_batch SET status=#{status},report=CAST(#{report,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS jsonb) WHERE id=#{id}
+  </update>
+  <update id="enqueueBatch">
+    UPDATE import_batch SET status='QUEUED',allow_updates=#{allow} WHERE id=#{id}
+  </update>
+  <select id="queuedBatches" resultMap="ImportBatchEntityMap">
+    SELECT id FROM import_batch WHERE status='QUEUED' ORDER BY created_at LIMIT 4
+  </select>
+<select id="batchesPage" resultMap="ImportBatchEntityMap">SELECT id,status,report,created_at FROM import_batch WHERE owner_id=#{id}
+ORDER BY <choose><when test="query.sort == 'id'">id</when><otherwise>created_at</otherwise></choose> <choose><when test="query.direction == 'asc'">ASC</when><otherwise>DESC</otherwise></choose>, id ASC LIMIT #{query.size} OFFSET #{query.offset}</select>
+<select id="batchesCount" resultType="long">SELECT count(*) FROM (SELECT id,status,report,created_at FROM import_batch WHERE owner_id=#{id}) page_count</select>
+</mapper>

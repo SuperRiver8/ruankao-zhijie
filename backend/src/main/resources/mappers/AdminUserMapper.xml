@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.AdminUserMapper">
+<resultMap id="admin" type="cn.zhijie.pojo.entity.AdminUserEntity"><result
+      column="id"
+      property="id"
+    /><result column="username" property="username" /><result
+      column="password_hash"
+      property="passwordHash"
+    /><result column="role" property="role" /><result column="enabled" property="enabled" /><result
+      column="permission_version"
+      property="permissionVersion"
+    /><result column="created_at" property="createdAt" /><result
+      column="updated_at"
+      property="updatedAt"
+    /></resultMap>
+<sql
+    id="columns"
+  >id,username,password_hash,role,enabled,permission_version,created_at,updated_at</sql>
+<sql id="filters"><where><if
+        test="username != null and username != ''"
+      >position(lower(#{username}) in lower(username)) &gt; 0</if><if
+        test="role != null"
+      >AND role=#{role}</if><if test="enabled != null">AND enabled=#{enabled}</if></where></sql>
+<select id="user" resultMap="admin">SELECT <include
+      refid="columns"
+    /> FROM admin_user WHERE id=#{id}</select>
+<select id="userByName" resultMap="admin">SELECT <include
+      refid="columns"
+    /> FROM admin_user WHERE username=#{username}</select>
+<select id="lockUser" resultMap="admin">SELECT <include
+      refid="columns"
+    /> FROM admin_user WHERE id=#{id} FOR UPDATE</select>
+<select id="lockAccounts" resultMap="admin">SELECT <include
+      refid="columns"
+    /> FROM admin_user ORDER BY id FOR UPDATE</select>
+<select id="page" resultMap="admin">SELECT <include refid="columns" /> FROM admin_user <include
+      refid="filters"
+    /> ORDER BY <choose><when test="sort == 'id'">id</when><otherwise
+      >created_at</otherwise></choose> <choose><when test="direction == 'asc'">ASC</when><otherwise
+      >DESC</otherwise></choose>,id ASC LIMIT #{size} OFFSET #{offset}</select>
+<select id="count" resultType="long">SELECT count(*) FROM admin_user <include
+      refid="filters"
+    /></select>
+<insert
+    id="insert"
+  >INSERT INTO admin_user(id,username,password_hash,role,enabled) VALUES(#{id},#{username},#{password},#{role},#{enabled})</insert>
+<update
+    id="update"
+  >UPDATE admin_user SET username=#{username},role=#{role},enabled=#{enabled},permission_version=permission_version+1,updated_at=now() WHERE id=#{id}</update>
+<update
+    id="updateAccount"
+  >UPDATE admin_user SET username=#{username},password_hash=#{password},permission_version=permission_version+1,updated_at=now() WHERE id=#{id}</update>
+</mapper>

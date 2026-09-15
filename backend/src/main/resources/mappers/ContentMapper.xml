@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.ContentMapper">
+<resultMap id="ContentProjectionMap" type="cn.zhijie.pojo.entity.ContentProjection">
+<result column="id" property="id" />
+<result column="kind" property="kind" />
+<result column="namespace" property="namespace" />
+<result column="external_id" property="externalId" />
+<result column="current_version" property="currentVersion" />
+<result column="title" property="title" />
+<result column="payload" property="payload" typeHandler="cn.zhijie.config.JsonNodeTypeHandler" />
+<result column="checksum" property="checksum" />
+<result column="status" property="status" />
+<result column="version" property="version" />
+</resultMap>
+  <select id="contents" resultMap="ContentProjectionMap">
+    SELECT e.id,e.kind,e.namespace,e.external_id,e.current_version,v.title,v.payload,v.status,v.version FROM content_entity e JOIN content_version
+    v ON v.entity_id=e.id
+    <choose>
+      <when test="published">
+        AND v.version=(SELECT max(x.version) FROM content_version x WHERE x.entity_id=e.id AND
+        x.status='PUBLISHED')
+      </when>
+      <otherwise>AND v.version=e.current_version</otherwise>
+    </choose>
+    <where>
+      <if test="kind != null">e.kind=#{kind}</if>
+    </where>
+    ORDER BY v.created_at DESC
+  </select>
+  <select id="content" resultMap="ContentProjectionMap">
+    SELECT e.id,e.kind,e.namespace,e.external_id,e.current_version,v.title,v.payload,v.status,v.version,v.checksum FROM content_entity e JOIN
+    content_version v ON v.entity_id=e.id AND v.version=e.current_version WHERE e.id=#{id} FOR
+    UPDATE OF e
+  </select>
+  <select id="publishedContent" resultMap="ContentProjectionMap">
+    SELECT e.id,e.kind,e.namespace,e.external_id,e.current_version,v.title,v.payload,v.status,v.version FROM content_entity e JOIN content_version
+    v ON v.entity_id=e.id WHERE e.id=#{id} AND v.status='PUBLISHED' ORDER BY v.version DESC LIMIT 1
+  </select>
+  <select id="findContent" resultMap="ContentProjectionMap">
+    SELECT e.id,e.kind,e.namespace,e.external_id,e.current_version,v.checksum,v.payload FROM content_entity e JOIN content_version v ON
+    v.entity_id=e.id AND v.version=e.current_version WHERE e.namespace=#{namespace} AND
+    e.kind=#{kind} AND e.external_id=#{externalId}
+  </select>
+  <insert id="insertEntity">
+    INSERT INTO content_entity VALUES(#{id},#{kind},#{namespace},#{externalId},1)
+  </insert>
+  <update id="nextVersion">
+    UPDATE content_entity SET current_version=#{version} WHERE id=#{id}
+  </update>
+  <insert id="insertVersion">
+    INSERT INTO
+    content_version(entity_id,version,title,payload,checksum,created_by) VALUES(#{id},#{version},#{title},CAST(#{payload,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS
+    jsonb),#{checksum},#{actor})
+  </insert>
+  <update id="publish">
+    UPDATE content_version SET status=#{status} WHERE entity_id=#{id} AND version=#{version} AND
+    status='PENDING'
+  </update>
+<select id="contentsPage" resultMap="ContentProjectionMap">SELECT e.id,e.kind,e.namespace,e.external_id,e.current_version,v.title,v.payload,v.status,v.version FROM content_entity e JOIN content_version
+    v ON v.entity_id=e.id
+    <choose>
+      <when test="published">
+        AND v.version=(SELECT max(x.version) FROM content_version x WHERE x.entity_id=e.id AND
+        x.status='PUBLISHED')
+      </when>
+      <otherwise>AND v.version=e.current_version</otherwise>
+    </choose>
+    <where>
+      <if test="kind != null">e.kind=#{kind}</if>
+    </where>
+ORDER BY <choose><when test="query.sort == 'id'">e.id</when><otherwise>v.created_at</otherwise></choose> <choose><when test="query.direction == 'asc'">ASC</when><otherwise>DESC</otherwise></choose>, e.id ASC LIMIT #{query.size} OFFSET #{query.offset}</select>
+<select id="contentsCount" resultType="long">SELECT count(*) FROM (SELECT e.id,e.kind,e.namespace,e.external_id,e.current_version,v.title,v.payload,v.status,v.version FROM content_entity e JOIN content_version
+    v ON v.entity_id=e.id
+    <choose>
+      <when test="published">
+        AND v.version=(SELECT max(x.version) FROM content_version x WHERE x.entity_id=e.id AND
+        x.status='PUBLISHED')
+      </when>
+      <otherwise>AND v.version=e.current_version</otherwise>
+    </choose>
+    <where>
+      <if test="kind != null">e.kind=#{kind}</if>
+    </where>) page_count</select>
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.CertificateMapper">
+<resultMap id="CertificateEntityMap" type="cn.zhijie.pojo.entity.CertificateEntity">
+<result column="id" property="id" />
+<result column="code" property="code" />
+<result column="name" property="name" />
+<result column="exam_system" property="examSystem" />
+<result column="specialty" property="specialty" />
+<result column="level" property="level" />
+<result column="enabled" property="enabled" />
+</resultMap>
+  <select
+    id="certificates"
+    resultMap="CertificateEntityMap"
+  >SELECT id,code,name,exam_system,specialty,level,enabled FROM certificate ORDER BY level,code</select>
+  <select
+    id="certificate"
+    resultMap="CertificateEntityMap"
+  >SELECT id,code,name,exam_system,specialty,level,enabled FROM certificate WHERE id=#{id}</select>
+  <insert id="saveCertificate">
+    INSERT INTO
+    certificate(id,code,name,specialty,level) VALUES(#{id},#{code},#{name},#{specialty},#{level}) ON
+    CONFLICT(id) DO UPDATE SET name=excluded.name,specialty=excluded.specialty
+  </insert>
+</mapper>

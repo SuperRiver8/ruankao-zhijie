@@ -1,0 +1,15 @@
+{
+  "templateVersion": "1.0",
+  "namespace": "ruankao-demo",
+  "entries": [
+    {
+      "kind": "KNOWLEDGE",
+      "externalId": "OS.PROCESS",
+      "payload": {
+        "title": "进程与线程",
+        "body": "进程是资源分配的基本单位，线程是调度的基本单位。",
+        "tags": ["操作系统"]
+      }
+    }
+  ]
+}

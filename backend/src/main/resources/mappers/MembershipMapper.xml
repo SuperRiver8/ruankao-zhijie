@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.MembershipMapper">
+<resultMap id="MemberRuleEntityMap" type="cn.zhijie.pojo.entity.MemberRuleEntity">
+<result column="level" property="level" />
+<result column="name" property="name" />
+<result column="icon" property="icon" />
+<result column="sort_order" property="sortOrder" />
+<result
+      column="entitlements"
+      property="entitlements"
+      typeHandler="cn.zhijie.config.JsonNodeTypeHandler"
+    />
+</resultMap>
+<resultMap id="BadgeProjectionMap" type="cn.zhijie.pojo.entity.BadgeProjection">
+<result column="name" property="name" />
+<result column="level" property="level" />
+<result column="specialty" property="specialty" />
+<result column="certified_at" property="certifiedAt" />
+</resultMap>
+<resultMap id="LevelHistoryEntityMap" type="cn.zhijie.pojo.entity.LevelHistoryEntity">
+<result column="id" property="id" />
+<result column="user_id" property="userId" />
+<result column="old_level" property="oldLevel" />
+<result column="new_level" property="newLevel" />
+<result column="application_id" property="applicationId" />
+<result column="created_at" property="createdAt" />
+</resultMap>
+  <select
+    id="rules"
+    resultMap="MemberRuleEntityMap"
+  >SELECT level,name,icon,sort_order,entitlements FROM member_rule ORDER BY sort_order</select>
+  <update id="saveRule">
+    UPDATE member_rule SET
+    name=#{name},icon=#{icon},sort_order=#{sort},entitlements=CAST(#{entitlements,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS jsonb) WHERE
+    level=#{level}
+  </update>
+  <select id="badges" resultMap="BadgeProjectionMap">
+    SELECT c.name,c.level,c.specialty,u.certified_at FROM user_certificate u JOIN certificate c ON
+    c.id=u.certificate_id WHERE u.user_id=#{id} AND u.active ORDER BY c.level DESC
+  </select>
+  <insert id="grantCertificate">
+    INSERT INTO
+    user_certificate(id,user_id,certificate_id,application_id,number_hash) VALUES(#{id},#{userId},#{certificateId},#{applicationId},#{hash})
+  </insert>
+  <update id="revokeCertificate">
+    UPDATE user_certificate SET active=false WHERE application_id=#{id}
+  </update>
+  <select id="calculatedLevel" resultType="int">
+    SELECT COALESCE(max(c.level),0) FROM user_certificate u JOIN certificate c ON
+    c.id=u.certificate_id WHERE u.user_id=#{id} AND u.active
+  </select>
+  <update id="setLevel">UPDATE app_user SET member_level=#{level} WHERE id=#{id}</update>
+  <insert id="levelHistory">
+    INSERT INTO member_level_history VALUES(#{id},#{userId},#{old},#{newLevel},#{applicationId},now())
+  </insert>
+  <select id="levelHistories" resultMap="LevelHistoryEntityMap">
+    SELECT id,user_id,old_level,new_level,application_id,created_at FROM member_level_history WHERE user_id=#{id} ORDER BY created_at DESC
+  </select>
+</mapper>

@@ -1,0 +1,53 @@
+server:
+  port: 8080
+  error:
+    include-message: never
+spring:
+  profiles:
+    default: dev
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/ruankao_zhijie}
+    username: ${DATABASE_USER:zhijie}
+    password: ${DATABASE_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST:}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  sql:
+    init:
+      mode: never
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 25MB
+mybatis:
+  type-handlers-package: cn.zhijie.config
+  mapper-locations: classpath:mappers/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+app:
+  session:
+    store: ${SESSION_STORE:auto}
+  jobs-enabled: ${JOBS_ENABLED:true}
+  jwt-secret: ${JWT_SECRET}
+  encryption-key: ${ENCRYPTION_KEY}
+  attachment-dir: ${ATTACHMENT_DIR:./data/attachments}
+  cors-origin: ${CORS_ORIGIN:http://localhost:5173,http://localhost:5174}
+  official-domains: ${OFFICIAL_DOMAINS:ruankao.org.cn,cpta.com.cn}
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

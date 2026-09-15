@@ -1,0 +1,40 @@
+{
+  "name": "zhijie-customer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "format:check": "prettier --check src index.html vite.config.ts",
+    "types:generate": "openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/generated.d.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.80",
+    "antd": "^5.24.0",
+    "axios": "1.8",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "7.56",
+    "react-markdown": "^9.0.3",
+    "react-router-dom": "7.6",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@prettier/plugin-xml": "3.4.1",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "3.5.3",
+    "prettier-plugin-java": "2.6.7",
+    "prettier-plugin-sql": "0.19.1",
+    "typescript": "~5.7.3",
+    "typescript-eslint": "^8.70.0",
+    "vite": "^6.1.0"
+  }
+}

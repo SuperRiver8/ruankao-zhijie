@@ -1,0 +1,104 @@
+{
+  "templateVersion": "1.0",
+  "namespace": "ruankao-demo",
+  "entries": [
+    {
+      "kind": "KNOWLEDGE",
+      "externalId": "OS.PROCESS",
+      "payload": {
+        "title": "进程与线程",
+        "body": "进程是资源分配的基本单位，线程是调度的基本单位。",
+        "tags": ["操作系统"]
+      }
+    },
+    {
+      "kind": "SYLLABUS",
+      "externalId": "SD.DEMO",
+      "payload": {
+        "title": "软件设计师示例大纲（仅演示，非官方大纲）",
+        "version": "demo-1",
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "subjects": [
+          {
+            "code": "BASIC",
+            "name": "基础知识",
+            "chapters": [{ "code": "OS", "name": "操作系统" }]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "MAPPING",
+      "externalId": "SD.OS.PROCESS",
+      "payload": {
+        "title": "进程知识映射",
+        "syllabusCode": "SD.DEMO",
+        "subject": "BASIC",
+        "chapter": "OS",
+        "knowledgeCodes": ["OS.PROCESS"],
+        "requirement": "掌握"
+      }
+    },
+    {
+      "kind": "QUESTION",
+      "externalId": "Q.001",
+      "payload": {
+        "title": "进程基本概念",
+        "type": "SINGLE",
+        "stem": "资源分配的基本单位是？",
+        "difficulty": 1,
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "syllabusCode": "SD.DEMO",
+        "subject": "BASIC",
+        "chapter": "OS",
+        "knowledgeCodes": ["OS.PROCESS"],
+        "options": [
+          { "id": "A", "text": "进程" },
+          { "id": "B", "text": "线程" }
+        ],
+        "answer": ["A"],
+        "explanation": "进程是资源分配的基本单位。"
+      }
+    },
+    {
+      "kind": "QUESTION",
+      "externalId": "Q.002",
+      "payload": {
+        "title": "进程和线程的区别",
+        "type": "SHORT",
+        "stem": "简述进程与线程在资源和调度方面的区别。",
+        "difficulty": 2,
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "knowledgeCodes": ["OS.PROCESS"],
+        "rubric": [
+          { "point": "进程承担资源分配", "weight": 0.5 },
+          { "point": "线程承担执行调度", "weight": 0.5 }
+        ],
+        "explanation": "线程共享所属进程的资源。"
+      }
+    },
+    {
+      "kind": "MATERIAL",
+      "externalId": "M.001",
+      "payload": {
+        "title": "进程知识卡片",
+        "body": "## 记忆要点\n\n- 进程：资源分配\n- 线程：执行调度\n\n这是演示内容，请经内容审核后发布。",
+        "knowledgeCodes": ["OS.PROCESS"],
+        "certificateCode": "SOFTWARE_DESIGNER"
+      }
+    },
+    {
+      "kind": "PAPER",
+      "externalId": "P.001",
+      "payload": {
+        "title": "软件设计师演示卷",
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "count": 2,
+        "durationMinutes": 30,
+        "points": 5,
+        "shuffleQuestions": true,
+        "shuffleOptions": true
+      }
+    }
+  ]
+}

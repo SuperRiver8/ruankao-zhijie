@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "MATERIAL",
+    "externalId": "M.001",
+    "payload": {
+      "title": "进程知识卡片",
+      "body": "## 记忆要点\n\n- 进程：资源分配\n- 线程：执行调度\n\n这是演示内容，请经内容审核后发布。",
+      "knowledgeCodes": ["OS.PROCESS"],
+      "certificateCode": "SOFTWARE_DESIGNER"
+    }
+  }
+]

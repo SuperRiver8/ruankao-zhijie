@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.LearningMapper">
+<resultMap id="CertificateEntityMap" type="cn.zhijie.pojo.entity.CertificateEntity">
+<result column="id" property="id" />
+<result column="code" property="code" />
+<result column="name" property="name" />
+<result column="exam_system" property="examSystem" />
+<result column="specialty" property="specialty" />
+<result column="level" property="level" />
+<result column="enabled" property="enabled" />
+</resultMap>
+<resultMap id="LearningProjectionMap" type="cn.zhijie.pojo.entity.LearningProjection">
+<result column="user_id" property="userId" />
+<result column="entity_id" property="entityId" />
+<result column="version" property="version" />
+<result column="favorite" property="favorite" />
+<result column="wrong" property="wrong" />
+<result column="progress" property="progress" />
+<result column="updated_at" property="updatedAt" />
+<result column="title" property="title" />
+</resultMap>
+  <select id="targets" resultMap="CertificateEntityMap">
+    SELECT c.id,c.code,c.name,c.exam_system,c.specialty,c.level,c.enabled FROM study_target t JOIN certificate c ON c.id=t.certificate_id WHERE t.user_id=#{id}
+  </select>
+  <insert id="addTarget">
+    INSERT INTO study_target VALUES(#{userId},#{certificateId}) ON CONFLICT DO NOTHING
+  </insert>
+  <delete id="removeTarget">
+    DELETE FROM study_target WHERE user_id=#{userId} AND certificate_id=#{certificateId}
+  </delete>
+  <insert id="saveLearning">
+    INSERT INTO
+    learning_record(user_id,entity_id,version,favorite,wrong,progress) VALUES(#{userId},#{entityId},#{version},#{favorite},#{wrong},#{progress}) ON
+    CONFLICT(user_id,entity_id) DO UPDATE SET
+    version=excluded.version,favorite=excluded.favorite,wrong=excluded.wrong,progress=excluded.progress,updated_at=now()
+  </insert>
+  <select id="learning" resultMap="LearningProjectionMap">
+    SELECT l.user_id,l.entity_id,l.version,l.favorite,l.wrong,l.progress,l.updated_at,v.title FROM learning_record l JOIN content_version v ON v.entity_id=l.entity_id AND
+    v.version=l.version WHERE l.user_id=#{id} ORDER BY updated_at DESC
+  </select>
+<select id="learningPage" resultMap="LearningProjectionMap">SELECT l.user_id,l.entity_id,l.version,l.favorite,l.wrong,l.progress,l.updated_at,v.title FROM learning_record l JOIN content_version v ON v.entity_id=l.entity_id AND
+    v.version=l.version WHERE l.user_id=#{id}
+ORDER BY <choose><when test="query.sort == 'id'">l.entity_id</when><otherwise>l.updated_at</otherwise></choose> <choose><when test="query.direction == 'asc'">ASC</when><otherwise>DESC</otherwise></choose>, l.entity_id ASC LIMIT #{query.size} OFFSET #{query.offset}</select>
+<select id="learningCount" resultType="long">SELECT count(*) FROM (SELECT l.user_id,l.entity_id,l.version,l.favorite,l.wrong,l.progress,l.updated_at,v.title FROM learning_record l JOIN content_version v ON v.entity_id=l.entity_id AND
+    v.version=l.version WHERE l.user_id=#{id}) page_count</select>
+</mapper>

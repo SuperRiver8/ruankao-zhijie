@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.zhijie.dao.ExamMapper">
+<resultMap id="ExamEntityMap" type="cn.zhijie.pojo.entity.ExamEntity">
+<result column="id" property="id" />
+<result column="user_id" property="userId" />
+<result column="paper_id" property="paperId" />
+<result column="snapshot" property="snapshot" typeHandler="cn.zhijie.config.JsonNodeTypeHandler" />
+<result column="answers" property="answers" typeHandler="cn.zhijie.config.JsonNodeTypeHandler" />
+<result column="result" property="result" typeHandler="cn.zhijie.config.JsonNodeTypeHandler" />
+<result column="started_at" property="startedAt" />
+<result column="deadline" property="deadline" />
+<result column="submitted_at" property="submittedAt" />
+<result column="status" property="status" />
+</resultMap>
+  <insert id="insertAttempt">
+    INSERT INTO
+    exam_attempt(id,user_id,paper_id,snapshot,deadline) VALUES(#{id},#{userId},#{paperId},CAST(#{snapshot,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS
+    jsonb),#{deadline})
+  </insert>
+  <select id="attempt" resultMap="ExamEntityMap">
+    SELECT id,user_id,paper_id,snapshot,answers,result,started_at,deadline,submitted_at,status FROM exam_attempt WHERE id=#{id}
+  </select>
+  <select id="lockAttempt" resultMap="ExamEntityMap">
+    SELECT id,user_id,paper_id,snapshot,answers,result,started_at,deadline,submitted_at,status FROM exam_attempt WHERE id=#{id} FOR UPDATE
+  </select>
+  <update id="saveAnswers">
+    UPDATE exam_attempt SET answers=CAST(#{answers,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS jsonb) WHERE id=#{id}
+  </update>
+  <update id="submitAttempt">
+    UPDATE exam_attempt SET
+    status='SUBMITTED',submitted_at=COALESCE(submitted_at,now()),result=CAST(#{result,typeHandler=cn.zhijie.config.JsonNodeTypeHandler} AS
+    jsonb) WHERE id=#{id}
+  </update>
+  <select id="attempts" resultMap="ExamEntityMap">
+    SELECT id,paper_id,status,started_at,deadline,result FROM exam_attempt WHERE
+    user_id=#{id} ORDER BY started_at DESC
+  </select>
+<select id="attemptsPage" resultMap="ExamEntityMap">SELECT id,paper_id,status,started_at,deadline,result FROM exam_attempt WHERE
+    user_id=#{id}
+ORDER BY <choose><when test="query.sort == 'id'">id</when><otherwise>started_at</otherwise></choose> <choose><when test="query.direction == 'asc'">ASC</when><otherwise>DESC</otherwise></choose>, id ASC LIMIT #{query.size} OFFSET #{query.offset}</select>
+<select id="attemptsCount" resultType="long">SELECT count(*) FROM (SELECT id,paper_id,status,started_at,deadline,result FROM exam_attempt WHERE
+    user_id=#{id}) page_count</select>
+</mapper>

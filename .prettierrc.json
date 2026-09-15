@@ -1,0 +1,23 @@
+{
+  "printWidth": 100,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "embeddedLanguageFormatting": "off",
+  "plugins": [
+    "./frontend/customer/node_modules/prettier-plugin-java/dist/index.js",
+    "./frontend/customer/node_modules/@prettier/plugin-xml/src/plugin.js",
+    "./frontend/customer/node_modules/prettier-plugin-sql/lib/index.js"
+  ],
+  "overrides": [
+    { "files": "*.java", "options": { "tabWidth": 4 } },
+    { "files": "*.xml", "options": { "xmlWhitespaceSensitivity": "ignore" } },
+    {
+      "files": "backend/src/main/resources/mappers/*.xml",
+      "options": { "xmlWhitespaceSensitivity": "strict" }
+    },
+    { "files": "*.sql", "options": { "language": "postgresql", "keywordCase": "upper" } }
+  ]
+}
+

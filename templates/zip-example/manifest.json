@@ -1,0 +1,12 @@
+{
+  "templateVersion": "1.0",
+  "namespace": "ruankao-demo",
+  "files": [
+    "knowledge-points.json",
+    "syllabuses.json",
+    "syllabus-mappings.json",
+    "questions.json",
+    "materials.json",
+    "papers.json"
+  ]
+}

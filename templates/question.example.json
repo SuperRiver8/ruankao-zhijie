@@ -1,0 +1,56 @@
+{
+  "templateVersion": "1.0",
+  "namespace": "ruankao-demo",
+  "entries": [
+    {
+      "kind": "QUESTION",
+      "externalId": "Q.001",
+      "payload": {
+        "title": "进程基本概念",
+        "type": "SINGLE",
+        "stem": "资源分配的基本单位是？",
+        "difficulty": 1,
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "syllabusCode": "SD.DEMO",
+        "subject": "BASIC",
+        "chapter": "OS",
+        "knowledgeCodes": ["OS.PROCESS"],
+        "options": [
+          {
+            "id": "A",
+            "text": "进程"
+          },
+          {
+            "id": "B",
+            "text": "线程"
+          }
+        ],
+        "answer": ["A"],
+        "explanation": "进程是资源分配的基本单位。"
+      }
+    },
+    {
+      "kind": "QUESTION",
+      "externalId": "Q.002",
+      "payload": {
+        "title": "进程和线程的区别",
+        "type": "SHORT",
+        "stem": "简述进程与线程在资源和调度方面的区别。",
+        "difficulty": 2,
+        "certificateCode": "SOFTWARE_DESIGNER",
+        "knowledgeCodes": ["OS.PROCESS"],
+        "rubric": [
+          {
+            "point": "进程承担资源分配",
+            "weight": 0.5
+          },
+          {
+            "point": "线程承担执行调度",
+            "weight": 0.5
+          }
+        ],
+        "explanation": "线程共享所属进程的资源。"
+      }
+    }
+  ]
+}

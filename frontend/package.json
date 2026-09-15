@@ -1,0 +1,9 @@
+{
+  "name": "zhijie-frontend",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix customer run dev",
+    "dev:admin": "npm --prefix admin run dev",
+    "build": "npm --prefix customer run build && npm --prefix admin run build"
+  }
+}

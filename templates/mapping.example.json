@@ -1,0 +1,18 @@
+{
+  "templateVersion": "1.0",
+  "namespace": "ruankao-demo",
+  "entries": [
+    {
+      "kind": "MAPPING",
+      "externalId": "SD.OS.PROCESS",
+      "payload": {
+        "title": "进程知识映射",
+        "syllabusCode": "SD.DEMO",
+        "subject": "BASIC",
+        "chapter": "OS",
+        "knowledgeCodes": ["OS.PROCESS"],
+        "requirement": "掌握"
+      }
+    }
+  ]
+}
