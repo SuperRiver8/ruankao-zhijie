@@ -9,7 +9,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-public class RedisSessionStore implements SessionStore, RateLimiter, MemberCache {
+public class RedisSessionStore implements SessionStore, RateLimiter, MemberCache, CaptchaStore {
 
     private final StringRedisTemplate redis;
 
@@ -109,5 +109,55 @@ public class RedisSessionStore implements SessionStore, RateLimiter, MemberCache
 
     public void invalidate(UUID userId) {
         execute(() -> redis.delete("member:" + userId));
+    }
+
+    public long failures(String key, Duration window, boolean record) {
+        // 使用 Redis 时钟，避免多实例时钟偏差；随机成员保留同毫秒的多次失败。
+        Long result = execute(() ->
+            redis.execute(
+                new DefaultRedisScript<>(
+                    "local t=redis.call('TIME'); local now=t[1]*1000+math.floor(t[2]/1000); " +
+                    "redis.call('ZREMRANGEBYSCORE',KEYS[1],'-inf',now-ARGV[1]); " +
+                    "if ARGV[2]=='1' then redis.call('ZADD',KEYS[1],now,ARGV[3]); " +
+                    "redis.call('PEXPIRE',KEYS[1],ARGV[1]); end; " +
+                    "return redis.call('ZCOUNT',KEYS[1],'-inf',now)",
+                    Long.class
+                ),
+                List.of("captcha:fail:" + key),
+                String.valueOf(window.toMillis()),
+                record ? "1" : "0",
+                UUID.randomUUID().toString()
+            )
+        );
+        if (result == null) throw new ResponseStatusException(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "验证码服务不可用"
+        );
+        return result;
+    }
+
+    public void clearFailures(String key) {
+        execute(() -> redis.delete("captcha:fail:" + key));
+    }
+
+    public void saveChallenge(String id, String value, Duration ttl) {
+        execute(() -> {
+            redis.opsForValue().set("captcha:challenge:" + id, value, ttl);
+            return true;
+        });
+    }
+
+    public Optional<String> consumeChallenge(String id) {
+        return Optional.ofNullable(
+            execute(() ->
+                redis.execute(
+                    new DefaultRedisScript<>(
+                        "local v=redis.call('GET',KEYS[1]); redis.call('DEL',KEYS[1]); return v",
+                        String.class
+                    ),
+                    List.of("captcha:challenge:" + id)
+                )
+            )
+        );
     }
 }

@@ -14,7 +14,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(SessionProperties.class)
+@EnableConfigurationProperties({ SessionProperties.class, CaptchaProperties.class })
 public class SessionConfig {
 
     static boolean redisSelected(Environment environment) {

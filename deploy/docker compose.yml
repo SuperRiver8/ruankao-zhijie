@@ -39,6 +39,13 @@ services:
     environment:
       TZ: Asia/Shanghai
       SESSION_STORE: redis
+      TRUSTED_PROXIES: ${AUTH_PROXY_IP:-172.30.240.10}
+      CAPTCHA_WINDOW_SECONDS: ${CAPTCHA_WINDOW_SECONDS:-120}
+      CAPTCHA_FAILURE_THRESHOLD: ${CAPTCHA_FAILURE_THRESHOLD:-2}
+      CAPTCHA_TTL_SECONDS: ${CAPTCHA_TTL_SECONDS:-120}
+      CAPTCHA_TOLERANCE: ${CAPTCHA_TOLERANCE:-5}
+      CAPTCHA_ISSUE_LIMIT: ${CAPTCHA_ISSUE_LIMIT:-30}
+      CAPTCHA_ISSUE_WINDOW_SECONDS: ${CAPTCHA_ISSUE_WINDOW_SECONDS:-60}
       JOBS_ENABLED: ${JOBS_ENABLED:-true}
       API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
       DATABASE_URL: jdbc:postgresql://postgres:5432/ruankao_zhijie
@@ -51,6 +58,9 @@ services:
       ATTACHMENT_DIR: /data/attachments
       CORS_ORIGIN: http://${SERVER_HOST:?请配置 SERVER_HOST}:${CUSTOMER_PORT:-5173},http://${SERVER_HOST}:${ADMIN_PORT:-5174}
     volumes: ['./attachments:/data/attachments']
+    networks:
+      default:
+      auth-proxy:
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -72,5 +82,13 @@ services:
       - ./frontend/admin:/usr/share/nginx/admin:ro
     depends_on:
       api: { condition: service_healthy }
+    networks:
+      auth-proxy:
+        ipv4_address: ${AUTH_PROXY_IP:-172.30.240.10}
+networks:
+  auth-proxy:
+    ipam:
+      config:
+        - subnet: ${AUTH_PROXY_SUBNET:-172.30.240.0/24}
 volumes:
   redis-data:

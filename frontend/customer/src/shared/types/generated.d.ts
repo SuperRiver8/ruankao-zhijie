@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/public/captcha/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["challenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/practice": {
         parameters: {
             query?: never;
@@ -814,6 +830,34 @@ export interface components {
             role: string;
             enabled: boolean;
         };
+        CaptchaChallengeRequest: {
+            /** @enum {string} */
+            scene: "CUSTOMER_LOGIN" | "ADMIN_LOGIN" | "CUSTOMER_REGISTER";
+            username: string;
+        };
+        ApiResponseCaptchaChallengeResponse: {
+            code?: string;
+            message?: string;
+            data?: components["schemas"]["CaptchaChallengeResponse"];
+            traceId?: string;
+        };
+        CaptchaChallengeResponse: {
+            challengeId?: string;
+            background?: string;
+            piece?: string;
+            /** Format: int32 */
+            width?: number;
+            /** Format: int32 */
+            height?: number;
+            /** Format: int32 */
+            pieceWidth?: number;
+            /** Format: int32 */
+            pieceHeight?: number;
+            /** Format: int32 */
+            pieceY?: number;
+            /** Format: int32 */
+            expiresIn?: number;
+        };
         PracticeRequest: {
             /** Format: int32 */
             count?: number;
@@ -851,9 +895,15 @@ export interface components {
             /** Format: date-time */
             serverTime?: string;
         };
+        CaptchaAnswer: {
+            challengeId: string;
+            /** Format: double */
+            offsetX: number;
+        };
         LoginRequest: {
             username: string;
             password: string;
+            captcha?: components["schemas"]["CaptchaAnswer"];
         };
         ApiResponseTokenResponse: {
             code?: string;
@@ -1567,6 +1617,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    challenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaptchaChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCaptchaChallengeResponse"];
                 };
             };
         };

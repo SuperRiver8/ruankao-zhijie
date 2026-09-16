@@ -29,6 +29,14 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 app:
+  trusted-proxies: ${TRUSTED_PROXIES:}
+  captcha:
+    window-seconds: ${CAPTCHA_WINDOW_SECONDS:120}
+    failure-threshold: ${CAPTCHA_FAILURE_THRESHOLD:2}
+    challenge-ttl-seconds: ${CAPTCHA_TTL_SECONDS:120}
+    tolerance: ${CAPTCHA_TOLERANCE:5}
+    issue-limit: ${CAPTCHA_ISSUE_LIMIT:30}
+    issue-window-seconds: ${CAPTCHA_ISSUE_WINDOW_SECONDS:60}
   session:
     store: ${SESSION_STORE:auto}
   jobs-enabled: ${JOBS_ENABLED:false}

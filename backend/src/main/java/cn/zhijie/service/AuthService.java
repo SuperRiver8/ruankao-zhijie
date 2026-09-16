@@ -32,6 +32,7 @@ public class AuthService {
     private final Audit audit;
     private final SessionStore sessions;
     private final RateLimiter limiter;
+    private final CaptchaService captcha;
     private final byte[] secret;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
@@ -41,6 +42,7 @@ public class AuthService {
         Audit audit,
         SessionStore sessions,
         RateLimiter limiter,
+        CaptchaService captcha,
         @Value("${app.jwt-secret}") String secret
     ) {
         this.userMapper = userMapper;
@@ -48,12 +50,19 @@ public class AuthService {
         this.audit = audit;
         this.sessions = sessions;
         this.limiter = limiter;
+        this.captcha = captcha;
         this.secret = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         check(this.secret.length >= 32, "JWT_SECRET 至少 32 字节");
     }
 
     public TokenResponse register(LoginRequest p, String ip) {
         rate("register:" + ip, 10, 3600);
+        captcha.verify(
+            CaptchaChallengeRequest.Scene.CUSTOMER_REGISTER,
+            p.username(),
+            ip,
+            p.captcha()
+        );
         String name = required(p.username(), "username"), password = required(
             p.password(),
             "password"
@@ -71,19 +80,31 @@ public class AuthService {
 
     public TokenResponse login(IdentityType type, LoginRequest p, String ip) {
         rate(type + ":login:" + ip, 30, 300);
-        Account u = type == IdentityType.ADMIN
-            ? admin(admins.userByName(required(p.username(), "username")))
-            : customer(userMapper.userByName(required(p.username(), "username")));
+        String username = required(p.username(), "username");
         String password = required(p.password(), "password");
+        if (captcha.required(type, username, ip) || p.captcha() != null) captcha.verify(
+            captcha.loginScene(type),
+            username,
+            ip,
+            p.captcha()
+        );
+        Account u = type == IdentityType.ADMIN
+            ? admin(admins.userByName(username))
+            : customer(userMapper.userByName(username));
         if (
             u == null ||
             !encoder.matches(password, u.passwordHash()) ||
             !Boolean.TRUE.equals(u.enabled())
-        ) throw new ResponseStatusException(
-            HttpStatus.UNAUTHORIZED,
-            "用户名或密码错误，或账号不可用"
-        );
-        return tokens(u);
+        ) {
+            if (captcha.failed(type, username, ip)) throw CaptchaException.required();
+            throw new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "用户名或密码错误，或账号不可用"
+            );
+        }
+        TokenResponse result = tokens(u);
+        captcha.succeeded(type, username, ip);
+        return result;
     }
 
     public void rate(String key, int limit, int seconds) {

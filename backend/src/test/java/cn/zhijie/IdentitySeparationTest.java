@@ -58,6 +58,11 @@ class IdentitySeparationTest {
                 mock(Audit.class),
                 store,
                 store,
+                new cn.zhijie.security.CaptchaService(
+                    store,
+                    store,
+                    new cn.zhijie.config.CaptchaProperties(120, 2, 120, 5, 30, 60)
+                ),
                 "test-signing-key-for-identity-separation-12345"
             );
             var input = new LoginRequest("same", "password123");
@@ -165,6 +170,7 @@ class IdentitySeparationTest {
             audit,
             mock(SessionStore.class),
             mock(RateLimiter.class),
+            mock(cn.zhijie.security.CaptchaService.class),
             "test-signing-key-for-identity-separation-12345"
         );
         var actor = new Actor(id, "ADMIN", "s", IdentityType.ADMIN);

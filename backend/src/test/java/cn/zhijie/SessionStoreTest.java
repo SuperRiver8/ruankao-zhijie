@@ -138,6 +138,11 @@ class SessionStoreTest {
                 mock(cn.zhijie.service.Audit.class),
                 store,
                 store,
+                new cn.zhijie.security.CaptchaService(
+                    store,
+                    store,
+                    new cn.zhijie.config.CaptchaProperties(120, 2, 120, 5, 30, 60)
+                ),
                 "test-only-signing-key-at-least-32-characters"
             );
             var login = auth.login(

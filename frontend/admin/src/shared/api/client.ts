@@ -11,6 +11,16 @@ export interface ApiResponse<T> {
   data: T;
   traceId: string;
 }
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
 const storageKey = 'zhijie-admin-session-v2';
 function restore(): SessionToken | null {
   try {
@@ -51,7 +61,11 @@ const refreshClient = axios.create({ baseURL: '/api', timeout: 30000 });
 type ReplayConfig = InternalAxiosRequestConfig & { replayed?: boolean; sessionEpoch?: number };
 client.interceptors.request.use((config: ReplayConfig) => {
   config.headers = AxiosHeaders.from(config.headers);
-  if (token && !config.url?.startsWith('/admin/auth/'))
+  if (
+    token &&
+    !config.url?.startsWith('/admin/auth/') &&
+    !config.url?.startsWith('/public/captcha/')
+  )
     config.headers.set('Authorization', `Bearer ${token.accessToken}`);
   config.sessionEpoch = epoch;
   return config;
@@ -66,7 +80,8 @@ client.interceptors.response.use(
       config &&
       !config.replayed &&
       token &&
-      !config.url?.startsWith('/admin/auth/')
+      !config.url?.startsWith('/admin/auth/') &&
+      !config.url?.startsWith('/public/captcha/')
     ) {
       config.replayed = true;
       if (config.sessionEpoch === epoch) {
@@ -93,7 +108,11 @@ client.interceptors.response.use(
     }
     if (error.response?.status === 401 && config?.replayed) updateSession(null);
     const detail = error.response?.data;
-    throw new Error(detail?.message || `请求失败（${error.response?.status || '网络异常'}）`);
+    throw new ApiError(
+      detail?.message || `请求失败（${error.response?.status || '网络异常'}）`,
+      detail?.code || 'NETWORK_ERROR',
+      error.response?.status,
+    );
   },
 );
 export async function request<T>(

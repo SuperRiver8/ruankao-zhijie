@@ -15,10 +15,16 @@ public class AdminAuthController {
 
     private final AuthService auth;
     private final AdminAccountService accounts;
+    private final cn.zhijie.security.ClientIpResolver ips;
 
-    public AdminAuthController(AuthService auth, AdminAccountService accounts) {
+    public AdminAuthController(
+        AuthService auth,
+        AdminAccountService accounts,
+        cn.zhijie.security.ClientIpResolver ips
+    ) {
         this.auth = auth;
         this.accounts = accounts;
+        this.ips = ips;
     }
 
     @PostMapping("/auth/login")
@@ -26,7 +32,7 @@ public class AdminAuthController {
         @Valid @RequestBody LoginRequest request,
         HttpServletRequest http
     ) {
-        return ApiResponse.ok(auth.login(IdentityType.ADMIN, request, http.getRemoteAddr()));
+        return ApiResponse.ok(auth.login(IdentityType.ADMIN, request, ips.resolve(http)));
     }
 
     @PostMapping("/auth/refresh")

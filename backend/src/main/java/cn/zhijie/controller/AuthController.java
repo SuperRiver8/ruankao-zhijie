@@ -18,20 +18,26 @@ public class AuthController {
 
     private final UserService application;
     private final AuthService auth;
+    private final cn.zhijie.security.ClientIpResolver ips;
 
-    public AuthController(UserService application, AuthService auth) {
+    public AuthController(
+        UserService application,
+        AuthService auth,
+        cn.zhijie.security.ClientIpResolver ips
+    ) {
         this.application = application;
         this.auth = auth;
+        this.ips = ips;
     }
 
     @PostMapping("/customer/auth/register")
     ApiResponse<TokenResponse> register(@Valid @RequestBody LoginRequest p, HttpServletRequest r) {
-        return ApiResponse.ok(auth.register(p, r.getRemoteAddr()));
+        return ApiResponse.ok(auth.register(p, ips.resolve(r)));
     }
 
     @PostMapping("/customer/auth/login")
     ApiResponse<TokenResponse> login(@Valid @RequestBody LoginRequest p, HttpServletRequest r) {
-        return ApiResponse.ok(auth.login(IdentityType.CUSTOMER, p, r.getRemoteAddr()));
+        return ApiResponse.ok(auth.login(IdentityType.CUSTOMER, p, ips.resolve(r)));
     }
 
     @PostMapping("/customer/auth/refresh")

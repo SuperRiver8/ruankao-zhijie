@@ -6,11 +6,19 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MemorySessionStore implements SessionStore, RateLimiter, MemberCache, AutoCloseable {
+public class MemorySessionStore
+    implements SessionStore, RateLimiter, MemberCache, CaptchaStore, AutoCloseable {
 
     private final ConcurrentHashMap<String, SessionRecord> sessions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Counter> counters = new ConcurrentHashMap<>();
     private final Clock clock;
+    private final ConcurrentHashMap<String, FailureWindow> failures = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Challenge> challenges = new ConcurrentHashMap<>();
+
+    private record FailureWindow(List<Instant> times, Instant expiresAt) {}
+
+    private record Challenge(String value, Instant expiresAt) {}
+
     private final ScheduledExecutorService cleaner;
 
     private record Counter(long value, Instant expiresAt) {}
@@ -82,6 +90,44 @@ public class MemorySessionStore implements SessionStore, RateLimiter, MemberCach
         Instant now = clock.instant();
         sessions.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
         counters.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
+        failures
+            .keySet()
+            .forEach(key ->
+                failures.computeIfPresent(key, (k, v) -> v.expiresAt().isAfter(now) ? v : null)
+            );
+        challenges.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
+    }
+
+    public long failures(String key, Duration window, boolean record) {
+        var count = new java.util.concurrent.atomic.AtomicLong();
+        failures.compute(key, (k, previous) -> {
+            Instant now = clock.instant();
+            var times = new ArrayList<Instant>();
+            if (previous != null) previous
+                .times()
+                .stream()
+                .filter(time -> time.isAfter(now.minus(window)) && !time.isAfter(now))
+                .forEach(times::add);
+            if (record) times.add(now);
+            count.set(times.size());
+            return times.isEmpty() ? null : new FailureWindow(times, times.getLast().plus(window));
+        });
+        return count.get();
+    }
+
+    public void clearFailures(String key) {
+        failures.remove(key);
+    }
+
+    public void saveChallenge(String id, String value, Duration ttl) {
+        challenges.put(id, new Challenge(value, clock.instant().plus(ttl)));
+    }
+
+    public Optional<String> consumeChallenge(String id) {
+        Challenge value = challenges.remove(id);
+        return value != null && value.expiresAt().isAfter(clock.instant())
+            ? Optional.of(value.value())
+            : Optional.empty();
     }
 
     // 本地会员资料直接读取数据库，没有需要清理的会员缓存。
@@ -91,5 +137,7 @@ public class MemorySessionStore implements SessionStore, RateLimiter, MemberCach
         cleaner.shutdownNow();
         sessions.clear();
         counters.clear();
+        failures.clear();
+        challenges.clear();
     }
 }

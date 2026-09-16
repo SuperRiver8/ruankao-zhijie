@@ -13,6 +13,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class Errors {
 
+    @ExceptionHandler(cn.zhijie.security.CaptchaException.class)
+    ResponseEntity<ApiResponse<Void>> captcha(cn.zhijie.security.CaptchaException error) {
+        return ResponseEntity.badRequest()
+            .body(ApiResponse.failure(error.code(), error.getMessage()));
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     ResponseEntity<ApiResponse<Void>> request(ResponseStatusException error) {
         return ResponseEntity.status(error.getStatusCode()).body(
