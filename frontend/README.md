@@ -2,19 +2,23 @@
 
 `customer` 是用户端，端口 5173；`admin` 是管理后台，端口 5174。两个目录分别维护源码、package.json、锁文件和 Vite 配置，构建产物分别位于各自的 `dist`。
 
-在项目根目录执行：
+从项目根目录打开终端，进入用户端目录执行：
 
 ```shell
-npm --prefix frontend/customer ci
-npm --prefix frontend/customer run dev
+cd frontend/customer
+npm ci
+npm run dev
 ```
 
-管理后台另开终端：
+管理后台从项目根目录另开终端，进入后台目录执行：
 
 ```shell
-npm --prefix frontend/admin ci
-npm --prefix frontend/admin run dev
+cd frontend/admin
+npm ci
+npm run dev
 ```
+
+首次启动先执行 `npm ci` 安装依赖，之后在各自目录执行 `npm run dev` 即可。两个终端可以同时运行，用户端使用 5173 端口，管理后台使用 5174 端口。
 
 两个开发服务器均将 `/api` 转发到 `http://localhost:8080`。也可以在 frontend 下继续使用 `npm run dev`、`npm run dev:admin`；`npm run build` 顺序构建两个项目。
 

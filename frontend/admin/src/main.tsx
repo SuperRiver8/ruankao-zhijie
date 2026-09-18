@@ -221,7 +221,7 @@ function Content() {
   const { data, error, load, pagination, isLoading } = usePageQuery(`/admin/content?kind=${kind}`);
   const [selected, setSelected] = useState<Row | null>(null),
     [form] = Form.useForm();
-  const { message } = AntApp.useApp();
+  const { message, modal } = AntApp.useApp();
   const edit = (r: Row) => {
     setSelected(r);
     form.setFieldsValue({
@@ -272,7 +272,7 @@ function Content() {
                   <>
                     <Button
                       onClick={() =>
-                        Modal.confirm({
+                        modal.confirm({
                           title: '审核并发布当前版本？',
                           content: '请确认题目、答案、引用和附件均准确。',
                           onOk: async () => {
@@ -282,6 +282,7 @@ function Content() {
                                 status: 'PUBLISHED',
                                 reason: '人工审核内容与引用通过',
                               });
+                              message.success('审核通过，内容已发布');
                               void load();
                             } catch (e) {
                               message.error((e as Error).message);

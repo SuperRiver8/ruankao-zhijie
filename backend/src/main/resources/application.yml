@@ -39,7 +39,7 @@ app:
     issue-window-seconds: ${CAPTCHA_ISSUE_WINDOW_SECONDS:60}
   session:
     store: ${SESSION_STORE:auto}
-  jobs-enabled: ${JOBS_ENABLED:false}
+  jobs-enabled: ${JOBS_ENABLED:true}
   jwt-secret: ${JWT_SECRET}
   encryption-key: ${ENCRYPTION_KEY}
   attachment-dir: ${ATTACHMENT_DIR:./data/attachments}

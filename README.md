@@ -98,13 +98,15 @@ mvn -f backend/pom.xml spring-boot:run
 另开终端启动用户端：
 
 ```powershell
-npm --prefix frontend/customer run dev
+cd frontend/customer
+npm run dev
 ```
 
 再开终端启动管理后台：
 
 ```powershell
-npm --prefix frontend/admin run dev
+cd frontend/admin
+npm run dev
 ```
 
 | 服务                 | 默认地址                                    |

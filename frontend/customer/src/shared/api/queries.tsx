@@ -51,6 +51,7 @@ export function PageControls({
   pagination: ReturnType<typeof usePageQuery>['pagination'];
 }) {
   const { current, pageSize, total, onChange } = pagination;
+  if (total === 0) return null;
   return (
     <nav className="section-title" aria-label="分页">
       <button disabled={current <= 1} onClick={() => onChange(current - 1, pageSize)}>
